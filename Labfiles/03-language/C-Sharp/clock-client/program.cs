@@ -1,22 +1,22 @@
 using System;
-using System.IO;
-using System.Text;
-using System.Collections.Generic;
-using System.Net.Http;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Core.Serialization;
 
-// Import namespaces
+// import namespaces
+using Azure;
+using Azure.AI.Language.Conversations;
 
 namespace clock_client
 {
     class Program
     {
-
+        /// <summary>
+        /// Main method: Entry point for the application. It reads configuration, initializes the client for the Language service model, 
+        /// and processes user input to provide time, date, or day based on intent recognition.
+        /// </summary>
         static async Task Main(string[] args)
         {
             try
@@ -29,7 +29,11 @@ namespace clock_client
                 string predictionKey = configuration["AIServicesKey"];
 
                 // Create a client for the Language service model
-                
+                Uri endpoint = new Uri(predictionEndpoint);
+                AzureKeyCredential credential = new AzureKeyCredential(predictionKey);
+
+                ConversationAnalysisClient client = new ConversationAnalysisClient(endpoint, credential);
+
                 // Get user input (until they enter "quit")
                 string userText = "";
                 while (userText.ToLower() != "quit")
@@ -40,9 +44,97 @@ namespace clock_client
                     {
 
                         // Call the Language service model to get intent and entities
-                        
+                        var projectName = "Clock";
+                        var deploymentName = "production";
+                        var data = new
+                        {
+                            analysisInput = new
+                            {
+                                conversationItem = new
+                                {
+                                    text = userText,
+                                    id = "1",
+                                    participantId = "1",
+                                }
+                            },
+                            parameters = new
+                            {
+                                projectName,
+                                deploymentName,
+                                // Use Utf16CodeUnit for strings in .NET.
+                                stringIndexType = "Utf16CodeUnit",
+                            },
+                            kind = "Conversation",
+                        };
+                        // Send request
+                        Response response = await client.AnalyzeConversationAsync(RequestContent.Create(data));
+                        dynamic conversationalTaskResult = response.Content.ToDynamicFromJson(JsonPropertyNames.CamelCase);
+                        dynamic conversationPrediction = conversationalTaskResult.Result.Prediction;
+                        var options = new JsonSerializerOptions { WriteIndented = true };
+                        Console.WriteLine(JsonSerializer.Serialize(conversationalTaskResult, options));
+                        Console.WriteLine("--------------------\n");
+                        Console.WriteLine(userText);
+                        var topIntent = "";
+                        if (conversationPrediction.Intents[0].ConfidenceScore > 0.5)
+                        {
+                            topIntent = conversationPrediction.TopIntent;
+                        }
+
                         // Apply the appropriate action
-                        
+                        switch (topIntent)
+                        {
+                            case "GetTime":
+                                var location = "local";
+                                // Check for a location entity
+                                foreach (dynamic entity in conversationPrediction.Entities)
+                                {
+                                    if (entity.Category == "Location")
+                                    {
+                                        //Console.WriteLine($"Location Confidence: {entity.ConfidenceScore}");
+                                        location = entity.Text;
+                                    }
+                                }
+                                // Get the time for the specified location
+                                string timeResponse = GetTime(location);
+                                Console.WriteLine(timeResponse);
+                                break;
+                            case "GetDay":
+                                var date = DateTime.Today.ToShortDateString();
+                                // Check for a Date entity
+                                foreach (dynamic entity in conversationPrediction.Entities)
+                                {
+                                    if (entity.Category == "Date")
+                                    {
+                                        //Console.WriteLine($"Location Confidence: {entity.ConfidenceScore}");
+                                        date = entity.Text;
+                                    }
+                                }
+                                // Get the day for the specified date
+                                string dayResponse = GetDay(date);
+                                Console.WriteLine(dayResponse);
+                                break;
+                            case "GetDate":
+                                var day = DateTime.Today.DayOfWeek.ToString();
+                                // Check for entities            
+                                // Check for a Weekday entity
+                                foreach (dynamic entity in conversationPrediction.Entities)
+                                {
+                                    if (entity.Category == "Weekday")
+                                    {
+                                        //Console.WriteLine($"Location Confidence: {entity.ConfidenceScore}");
+                                        day = entity.Text;
+                                    }
+                                }
+                                // Get the date for the specified day
+                                string dateResponse = GetDate(day);
+                                Console.WriteLine(dateResponse);
+                                break;
+                            default:
+                                // Some other intent (for example, "None") was predicted
+                                Console.WriteLine("Try asking me for the time, the day, or the date.");
+                                break;
+                        }
+
                     }
 
                 }
@@ -54,6 +146,12 @@ namespace clock_client
             }
         }
 
+        /// <summary>
+        /// Gets the current time for a specified location. 
+        /// Returns the time as a string formatted as "HH:mm".
+        /// </summary>
+        /// <param name="location">The location for which the time is requested.</param>
+        /// <returns>The current time as a string.</returns>
         static string GetTime(string location)
         {
             var timeString = "";
@@ -101,6 +199,13 @@ namespace clock_client
             return timeString;
         }
 
+        /// <summary>
+        /// Gets the date for a specified day of the week.
+        /// Returns the date as a string in short date format.
+        /// </summary>
+        /// <param name="day">The day of the week for which the date is requested.</param>
+        /// <returns>The date as a string.</returns>
+
         static string GetDate(string day)
         {
             string date_string = "I can only determine dates for today or named days of the week.";
@@ -118,6 +223,12 @@ namespace clock_client
 
         }
 
+        /// <summary>
+        /// Gets the day of the week for a specified date.
+        /// Returns the day as a string.
+        /// </summary>
+        /// <param name="date">The date for which the day of the week is requested.</param>
+        /// <returns>The day of the week as a string.</returns>
         static string GetDay(string date)
         {
             // Note: To keep things simple, dates must be entered in US format (MM/DD/YYYY)

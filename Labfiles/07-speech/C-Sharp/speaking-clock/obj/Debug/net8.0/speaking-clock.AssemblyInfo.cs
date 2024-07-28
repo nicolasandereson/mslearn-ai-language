@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("speaking-clock")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b292823b2326c53307299e9aa0adc84a3b152b39")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e27704d63bd6dbe3760d736c856f2827f1295afb")]
 [assembly: System.Reflection.AssemblyProductAttribute("speaking-clock")]
 [assembly: System.Reflection.AssemblyTitleAttribute("speaking-clock")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
