@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = text_analysis
-build_property.ProjectDir = C:\Users\nicol\Desktop\mslearn-ai-language\Labfiles\01-analyze-text\C-Sharp\text-analysis\
+build_property.ProjectDir = /Users/nicolasanderson/Desktop/mslearn-ai-language/Labfiles/01-analyze-text/C-Sharp/text-analysis/
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
